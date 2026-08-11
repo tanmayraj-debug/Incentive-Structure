@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Incentive Calculator</title>
+<style>
+  :root{
+    --primary:#2f6fed;
+    --primary-dark:#1d4ed8;
+    --ink:#1c2333;
+    --muted:#8891a3;
+    --line:#e9ecf2;
+    --paper:#ffffff;
+    --bg:#f7f8fb;
+    --green:#1a8a4a;
+    --green-bg:#eafaf0;
+    --red:#d13b3b;
+    --red-bg:#fdeeee;
+    --amber-bg:#fff8e6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1100px;margin:0 auto;padding:24px 16px 60px;}
+  header{text-align:center;padding:10px 8px 6px;}
+  header h1{font-size:1.5rem;margin:0 0 4px;color:var(--ink);font-weight:700;letter-spacing:-0.01em;}
+  header p{margin:0;color:var(--muted);font-size:0.9rem;}
+
+  .scenarios{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:22px;align-items:start;}
+  @media (max-width:860px){.scenarios{grid-template-columns:1fr;}}
+
+  .card{background:var(--paper);border-radius:16px;border:1px solid var(--line);overflow:hidden;}
+  .card-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;}
+  .card-head h2{margin:0;font-size:0.95rem;font-weight:700;color:var(--ink);}
+  .card-head .pill{font-size:0.68rem;color:var(--primary);background:#eaf1ff;padding:2px 8px;border-radius:20px;font-weight:600;}
+  .card-body{padding:16px 18px 20px;}
+
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+  .field{position:relative;}
+  label{display:flex;align-items:center;gap:5px;font-size:0.74rem;color:var(--muted);margin-bottom:5px;font-weight:600;}
+  select, input[type=number], input[type=text]{
+    width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:9px;
+    font-size:0.9rem;background:#fff;color:var(--ink);
+  }
+  select:focus, input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(47,111,237,0.12);}
+
+  .help{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:15px;height:15px;border-radius:50%;background:#dfe6f5;color:var(--primary-dark);
+    font-size:0.62rem;font-weight:800;cursor:pointer;flex-shrink:0;user-select:none;
+  }
+  .tooltip{
+    display:none;position:absolute;z-index:20;left:0;top:calc(100% + 4px);
+    background:#1c2333;color:#fff;font-size:0.72rem;line-height:1.4;
+    padding:8px 10px;border-radius:8px;width:220px;box-shadow:0 6px 18px rgba(0,0,0,0.18);
+  }
+  .tooltip.show{display:block;}
+  .tooltip:after{content:"";position:absolute;bottom:100%;left:14px;border:5px solid transparent;border-bottom-color:#1c2333;}
+
+  .section-title{
+    font-size:0.8rem;text-transform:uppercase;letter-spacing:0.03em;color:var(--ink);
+    font-weight:800;margin:20px 0 10px;display:flex;align-items:center;gap:6px;
+    padding-bottom:6px;border-bottom:2px solid var(--line);
+  }
+  .rfd-table{width:100%;border-collapse:collapse;}
+  .rfd-table th{font-size:0.66rem;text-transform:uppercase;letter-spacing:0.03em;color:var(--muted);font-weight:700;text-align:left;padding:0 3px 6px;}
+  .rfd-table td{padding:3px 3px;vertical-align:middle;}
+  .rfd-table select, .rfd-table input{padding:7px 8px;font-size:0.84rem;}
+  .col-date{width:132px;}
+  .col-recovered{width:90px;}
+  .field-note{font-size:0.7rem;color:var(--muted);margin:4px 0 2px;}
+
+  .rules-ref{max-width:1100px;margin:18px auto 0;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:16px 20px;}
+  .rules-ref summary{font-size:0.85rem;color:var(--primary);font-weight:700;cursor:pointer;}
+  .rules-body{margin-top:12px;}
+  .rule-h{font-size:0.74rem;text-transform:uppercase;letter-spacing:0.03em;color:var(--ink);font-weight:800;margin:16px 0 6px;}
+  .rule-h:first-child{margin-top:2px;}
+  .rules-body table{width:100%;border-collapse:collapse;font-size:0.78rem;margin-bottom:4px;}
+  .rules-body th{text-align:left;color:var(--muted);font-weight:600;padding:5px 6px;border-bottom:1px solid var(--line);}
+  .rules-body td{padding:5px 6px;border-bottom:1px solid var(--line);}
+  .rule-note{font-size:0.7rem;color:var(--muted);margin:0 0 4px;}
+  .col-cycle{width:64px;}
+  .col-price{width:auto;}
+  .col-rm{width:26px;}
+  .rm-btn{background:none;border:none;color:#c0c7d6;font-size:1rem;cursor:pointer;padding:2px 4px;line-height:1;}
+  .rm-btn:hover{color:var(--red);}
+  .link-btn{
+    background:none;border:none;color:var(--primary);font-size:0.76rem;font-weight:600;
+    cursor:pointer;padding:4px 0;text-decoration:underline;text-underline-offset:2px;
+  }
+  .add-btn{
+    background:#eaf1ff;border:none;color:var(--primary-dark);font-size:0.78rem;font-weight:700;
+    padding:7px 12px;border-radius:8px;cursor:pointer;margin-top:4px;
+  }
+  .add-btn:hover{background:#dbe7ff;}
+  .partial-row{background:var(--amber-bg);border-radius:8px;padding:6px 8px;margin:2px 0 6px;display:none;}
+  .partial-row.show{display:flex;align-items:center;gap:6px;}
+  .partial-row label{margin:0;white-space:nowrap;}
+
+  .summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;}
+  .stat{background:var(--bg);border-radius:10px;padding:9px 11px;}
+  .stat .k{font-size:0.64rem;text-transform:uppercase;color:var(--muted);letter-spacing:0.03em;}
+  .stat .v{font-size:0.95rem;font-weight:700;color:var(--ink);}
+
+  .total-box{
+    margin-top:14px;background:var(--ink);color:#fff;border-radius:12px;padding:14px 16px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .total-box .k{font-size:0.76rem;opacity:0.75;}
+  .total-box .v{font-size:1.4rem;font-weight:800;}
+
+  details.breakdown{margin-top:12px;}
+  details.breakdown summary{cursor:pointer;font-size:0.78rem;color:var(--primary);font-weight:600;list-style:none;}
+  details.breakdown summary::-webkit-details-marker{display:none;}
+  details.breakdown table{width:100%;font-size:0.76rem;border-collapse:collapse;margin-top:8px;}
+  details.breakdown th{text-align:left;color:var(--muted);font-weight:600;padding:4px;border-bottom:1px solid var(--line);}
+  details.breakdown td{padding:4px;border-bottom:1px solid var(--line);}
+  .tag{font-size:0.62rem;font-weight:700;padding:1px 6px;border-radius:10px;background:var(--red-bg);color:var(--red);}
+
+  .compare{margin-top:22px;background:var(--paper);border-radius:16px;border:1px solid var(--line);padding:18px 20px;}
+  .compare h2{margin:0 0 12px;font-size:0.95rem;color:var(--ink);}
+  .compare-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:center;}
+  @media (max-width:640px){.compare-grid{grid-template-columns:1fr;}}
+  .compare-grid .box{padding:12px;border-radius:10px;background:var(--bg);}
+  .compare-grid .box.diff-pos{background:var(--green-bg);}
+  .compare-grid .box.diff-neg{background:var(--red-bg);}
+  .compare-grid .label{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.03em;}
+  .compare-grid .amt{font-size:1.3rem;font-weight:800;color:var(--ink);margin-top:4px;}
+  .compare-grid .amt.pos{color:var(--green);}
+  .compare-grid .amt.neg{color:var(--red);}
+
+  .foot-note{font-size:0.72rem;color:var(--muted);margin-top:18px;text-align:center;line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Incentive Calculator</h1>
+    <p>Pick a cycle, enter the price, done. Tap any <span class="help" style="position:relative;top:2px;">?</span> for help.</p>
+  </header>
+
+  <div class="scenarios">
+    <div class="card">
+      <div class="card-head"><h2>Scenario A</h2></div>
+      <div class="card-body" id="bodyA"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>Scenario B</h2><span class="pill">optional</span></div>
+      <div class="card-body" id="bodyB"></div>
+    </div>
+  </div>
+
+  <div class="compare">
+    <h2>Comparison</h2>
+    <div class="compare-grid">
+      <div class="box"><div class="label">Scenario A</div><div class="amt" id="totalA">\u20b90</div></div>
+      <div class="box"><div class="label">Scenario B</div><div class="amt" id="totalB">\u20b90</div></div>
+      <div class="box" id="diffBox"><div class="label">Difference (B \u2212 A)</div><div class="amt" id="diffVal">\u20b90</div></div>
+    </div>
+  </div>
+
+  <div class="foot-note">
+    Cycle 1 = 1st\u201315th &nbsp;\u00b7&nbsp; Cycle 2 = 16th\u2013end of month. Enter RFDs in the order they happened within each cycle.
+  </div>
+</div>
+
+
+<script>
+const BASE_SLAB = {
+  2:[4800,6000,7500,9000,10800],
+  3:[5760,7200,9000,10800,12960],
+  4:[7040,8800,11000,13200,15840],
+  6:[8000,10000,12500,15000,18000],
+};
+const SLAB_TIERS = [2,3,4,6];
+const ACH_BONUS = { le6:[10000,15000,20000], ge7:[20000,25000,30000] };
+const ADV_TIER = (price)=> price>=100000?5000 : price>=75000?3500 : 0;
+const money = (n)=>{ const r=Math.round(n||0); return (r<0?'-':'')+'\u20b9'+Math.abs(r).toLocaleString('en-IN'); };
+
+function bandIndex(ach){
+  if(ach<0.8) return 1;
+  if(ach<1) return 2;
+  if(Math.abs(ach-1)<1e-9) return 3;
+  if(ach<1.4) return 4;
+  return 5;
+}
+function nearestSlabRate(count, band){
+  let chosen=null;
+  for(const t of SLAB_TIERS){ if(t<=count) chosen=t; }
+  if(chosen===null) return 0;
+  return BASE_SLAB[chosen][band-1];
+}
+function fpMultiplier(price){
+  if(price<160000) return 0;
+  if(price<195000) return 0.5;
+  if(price<210000) return 1;
+  return 1.25;
+}
+function dayOfMonth(dateStr){
+  if(!dateStr) return null;
+  const d = new Date(dateStr+'T00:00:00');
+  return d.getDate();
+}
+
+function makeState(){
+  return {
+    mode:'range',
+    fpTarget:6, advTarget:1, quotaAllowance:1,
+    fpSold:'', advSold:'', advBracket:'',
+    fp:[{cycle:'C1', date:'', price:'', recovered:''}],
+    adv:[{date:'', price:'', recovered:''}],
+    bonuses:[]
+  };
+}
+const state = { A: makeState(), B: makeState() };
+
+function setMode(scn, mode){ state[scn].mode = mode; render(); }
+
+function addRow(scn, kind){
+  if(kind==='bonus'){ state[scn].bonuses.push({label:'',amount:''}); }
+  else if(kind==='adv'){ state[scn].adv.push({date:'', price:'', recovered:''}); }
+  else { state[scn][kind].push({cycle:'C1', date:'', price:'', recovered:''}); }
+  render();
+}
+function removeRow(scn, kind, idx){
+  if(kind==='bonus'){ state[scn].bonuses.splice(idx,1); }
+  else { state[scn][kind].splice(idx,1); }
+  render();
+}
+function toggleTip(id){
+  document.querySelectorAll('.tooltip.show').forEach(t=>{ if(t.id!==id) t.classList.remove('show'); });
+  const el = document.getElementById(id);
+  el.classList.toggle('show');
+}
+document.addEventListener('click', function(e){
+  if(!e.target.classList.contains('help')){
+    document.querySelectorAll('.tooltip.show').forEach(t=>t.classList.remove('show'));
+  }
+}, true);
+
+function computeScenario(s){
+  const fpTarget = Number(s.fpTarget)||0;
+  const advTarget = Number(s.advTarget)||0;
+  const quotaAllowance = Number(s.quotaAllowance)||0;
+  const totalTarget = fpTarget + advTarget;
+
+  const fpRows = s.fp.filter(r=>r.price!=='').map(r=>({cycle:r.cycle, price:Number(r.price), date:r.date||null, recovered:r.recovered!==''?Number(r.recovered):null}));
+  const advRows = s.adv.filter(r=>r.price!=='' && r.date).map(r=>({cycle:dayOfMonth(r.date)<=15?'C1':'C2', price:Number(r.price), date:r.date, recovered:r.recovered!==''?Number(r.recovered):null}));
+
+  // Order: Cycle 1 before Cycle 2. Within a cycle, sort by date when both rows being
+  // compared have one entered; otherwise keep the order they were entered in (stable sort).
+  function withinCycleOrder(rows){
+    return rows.slice().sort((a,b)=>{
+      if(a.date && b.date) return a.date.localeCompare(b.date);
+      return 0;
+    });
+  }
+  const orderedFP = [...withinCycleOrder(fpRows.filter(r=>r.cycle==='C1')), ...withinCycleOrder(fpRows.filter(r=>r.cycle==='C2'))];
+  const orderedAdv = [...withinCycleOrder(advRows.filter(r=>r.cycle==='C1')), ...withinCycleOrder(advRows.filter(r=>r.cycle==='C2'))];
+
+  const fpAchieved = fpRows.length;
+  const advAchieved = advRows.length;
+  const advCounted = Math.min(advAchieved, advTarget);
+  const achievement = totalTarget>0 ? (fpAchieved + advCounted) / totalTarget : 0;
+  const band = bandIndex(achievement);
+
+  const c1FP = fpRows.filter(r=>r.cycle==='C1').length;
+  const c2FP = fpAchieved - c1FP;
+
+  let c1AdvReq=0, c2AdvReq=0;
+  orderedAdv.forEach((r,i)=>{ if(i<advTarget){ if(r.cycle==='C1') c1AdvReq++; else c2AdvReq++; } });
+
+  const c1Slab = c1FP + c1AdvReq;
+  const c2Slab = c2FP + c2AdvReq;
+  const c1Base = nearestSlabRate(c1Slab, band);
+  const c2Base = nearestSlabRate(c2Slab, band);
+
+  // Cycle Bonus / Zero-Cycle Penalty count only FP + your REQUIRED Adv+ in that cycle.
+  // Extra Adv+ (beyond target) is a pure flat payout and must not affect anything else.
+  const c1Total = c1FP + c1AdvReq;
+  const c2Total = c2FP + c2AdvReq;
+
+  let quotaUsedCount = 0;
+  const fpDetail = orderedFP.map(r=>{
+    let mult;
+    if(r.price>=160000 && r.price<=170000){
+      mult = quotaUsedCount < quotaAllowance ? 1 : 0;
+      quotaUsedCount++;
+    } else { mult = fpMultiplier(r.price); }
+    const base = r.cycle==='C1' ? c1Base : c2Base;
+    const computedPayout = base*mult;
+    const recoveredAmt = r.recovered===null ? r.price : r.recovered;
+    const requiredRecovery = r.price - 30000;
+    const held = recoveredAmt < requiredRecovery;
+    const payout = held ? 0 : computedPayout;
+    return {...r, mult, base, computedPayout, recoveredAmt, held, payout};
+  });
+  const sumFP = fpDetail.reduce((a,r)=>a+r.payout,0);
+
+  const advDetail = orderedAdv.map((r,i)=>{
+    const required = i < advTarget;
+    const computedPayout = required ? 0 : ADV_TIER(r.price);
+    const recoveredAmt = r.recovered===null ? r.price : r.recovered;
+    const held = (!required) && recoveredAmt < 45000;
+    const payout = held ? 0 : computedPayout;
+    return {...r, required, computedPayout, recoveredAmt, held, payout};
+  });
+  const sumAdv = advDetail.reduce((a,r)=>a+r.payout,0);
+
+  const achBonus = achievement < 1 ? 0 : (totalTarget>=7 ? ACH_BONUS.ge7 : ACH_BONUS.le6)[band-3];
+  const cycleBonus = (c1Total>=2 && c2Total>=2) ? 5000 : 0;
+  const zeroAdvMult = advAchieved===0 ? 0.95 : 1;
+  const zeroCycleMult = (c1Total===0 || c2Total===0) ? 0.75 : 1;
+
+  const coreTotal = (sumFP + sumAdv + achBonus + cycleBonus) * zeroAdvMult * zeroCycleMult;
+
+  const bonusRows = s.bonuses.filter(b=>b.label && b.amount!=='').map(b=>({label:b.label, amount:Number(b.amount)}));
+  const bonusSum = bonusRows.reduce((a,b)=>a+b.amount,0);
+  const total = coreTotal + bonusSum;
+
+  return { fpAchieved, advAchieved, achievement, band, c1Slab,c2Slab,c1Base,c2Base,
+    fpDetail, advDetail, sumFP, sumAdv, achBonus, cycleBonus, zeroAdvMult, zeroCycleMult,
+    bonusRows, bonusSum, coreTotal, total };
+}
+
+const ADV_BRACKET_LABELS = { '75-99999':'\u20b975,000\u2013\u20b999,999', '100000+':'\u20b91,00,000+' };
+const ADV_BRACKET_DROPDOWN_KEYS = ['75-99999'];
+
+function computeRange(s){
+  const fpTarget = Number(s.fpTarget)||0;
+  const advTarget = Number(s.advTarget)||0;
+  const quotaAllowance = Number(s.quotaAllowance)||0;
+  const totalTarget = fpTarget + advTarget;
+  const fpSold = Math.max(0, Number(s.fpSold)||0);
+  const advSold = Math.max(0, Number(s.advSold)||0);
+
+  const advCounted = Math.min(advSold, advTarget);
+  const achievement = totalTarget>0 ? (fpSold + advCounted) / totalTarget : 0;
+  const band = bandIndex(achievement);
+  const achBonus = achievement < 1 ? 0 : (totalTarget>=7 ? ACH_BONUS.ge7 : ACH_BONUS.le6)[band-3];
+  const zeroAdvMult = advSold===0 ? 0.95 : 1;
+
+  const nReq = Math.min(advSold, advTarget);
+  const nExtra = Math.max(0, advSold - advTarget);
+
+  // Assume half your FP RFDs land in \u20b91,75,000-1,90,000 (50% payout) and half in
+  // \u20b91,95,000-2,10,000 (100% payout) \u2014 your real average selling price mix.
+  const nLow = Math.floor(fpSold/2);
+  const nHigh = fpSold - nLow;
+
+  let advValOptions;
+  if(s.advBracket==='75-99999') advValOptions=[3500];
+  else if(s.advBracket==='100000+') advValOptions=[5000];
+  else advValOptions = [3500,5000];
+
+  let min = Infinity, max = -Infinity;
+
+  for(const advVal of advValOptions){
+    for(let c1FP=0; c1FP<=fpSold; c1FP++){
+      const c2FP = fpSold - c1FP;
+      const lowInC1Min = Math.max(0, nLow - c2FP);
+      const lowInC1Max = Math.min(nLow, c1FP);
+      for(let c1Low=lowInC1Min; c1Low<=lowInC1Max; c1Low++){
+        const c1High = c1FP - c1Low;
+        const c2Low = nLow - c1Low;
+        const c2High = c2FP - c2Low;
+        for(let c1Req=0; c1Req<=nReq; c1Req++){
+          const c2Req = nReq - c1Req;
+          for(let c1Extra=0; c1Extra<=nExtra; c1Extra++){
+            const c2Extra = nExtra - c1Extra;
+            const c1Slab = c1FP + c1Req;
+            const c2Slab = c2FP + c2Req;
+            const c1Base = nearestSlabRate(c1Slab, band);
+            const c2Base = nearestSlabRate(c2Slab, band);
+
+            const fpPayout = c1Base*(c1Low*0.5 + c1High*1) + c2Base*(c2Low*0.5 + c2High*1);
+            const advExtraPayout = (c1Extra+c2Extra)*advVal;
+            // Cycle Bonus / Zero-Cycle Penalty: only FP + required Adv+ count, never extras.
+            const c1Total = c1FP + c1Req;
+            const c2Total = c2FP + c2Req;
+            const cycleBonus = (c1Total>=2 && c2Total>=2) ? 5000 : 0;
+            const zeroCycleMult = (c1Total===0 || c2Total===0) ? 0.75 : 1;
+            const total = (fpPayout + advExtraPayout + achBonus + cycleBonus) * zeroAdvMult * zeroCycleMult;
+            if(total<min) min=total;
+            if(total>max) max=total;
+          }
+        }
+      }
+    }
+  }
+  if(min===Infinity){ min=0; max=0; }
+  return { achievement, band, min, max };
+}
+
+function tip(id, text){
+  return `<span class="help" onclick="toggleTip('${id}')">?</span><span class="tooltip" id="${id}">${text}</span>`;
+}
+
+function fpRow(scn, idx, row){
+  return `
+    <tr>
+      <td class="col-cycle"><select onchange="state.${scn}.fp[${idx}].cycle=this.value; render()">
+        <option value="C1" ${row.cycle==='C1'?'selected':''}>C1</option>
+        <option value="C2" ${row.cycle==='C2'?'selected':''}>C2</option>
+      </select></td>
+      <td class="col-price"><input type="number" placeholder="Price" value="${row.price}" onchange="state.${scn}.fp[${idx}].price=this.value; render()"></td>
+      <td class="col-recovered"><input type="number" placeholder="Full" value="${row.recovered}" onchange="state.${scn}.fp[${idx}].recovered=this.value; render()"></td>
+      <td class="col-rm"><button class="rm-btn" onclick="removeRow('${scn}','fp',${idx})">\u2715</button></td>
+    </tr>`;
+}
+function advRow(scn, idx, row){
+  return `
+    <tr>
+      <td class="col-date"><input type="date" required value="${row.date}" onchange="state.${scn}.adv[${idx}].date=this.value; render()"></td>
+      <td class="col-price"><input type="number" placeholder="Price" value="${row.price}" onchange="state.${scn}.adv[${idx}].price=this.value; render()"></td>
+      <td class="col-recovered"><input type="number" placeholder="Full" value="${row.recovered}" onchange="state.${scn}.adv[${idx}].recovered=this.value; render()"></td>
+      <td class="col-rm"><button class="rm-btn" onclick="removeRow('${scn}','adv',${idx})">\u2715</button></td>
+    </tr>`;
+}
+function bonusRow(scn, idx, row){
+  return `
+    <tr>
+      <td><input type="text" placeholder="e.g. August Sprint" value="${row.label}" onchange="state.${scn}.bonuses[${idx}].label=this.value; render()"></td>
+      <td style="width:110px;"><input type="number" placeholder="Amount" value="${row.amount}" onchange="state.${scn}.bonuses[${idx}].amount=this.value; render()"></td>
+      <td class="col-rm"><button class="rm-btn" onclick="removeRow('${scn}','bonus',${idx})">\u2715</button></td>
+    </tr>`;
+}
+
+function renderScenario(scn){
+  const s = state[scn];
+
+  if(s.mode==='range'){
+    const rr = computeRange(s);
+    const achPct = (rr.achievement*100).toFixed(1)+'%';
+    const html = `
+      <div class="field-row">
+        <div class="field"><label>Monthly FP Target ${tip(scn+'-fpt','How many DS/Full Programme sales you are expected to close this month.')}</label>
+          <select onchange="state.${scn}.fpTarget=this.value; render()">
+            ${[2,3,4,5,6,7,8,9,10].map(v=>`<option value="${v}" ${Number(s.fpTarget)===v?'selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field"><label>Monthly Adv+ Target ${tip(scn+'-advt','Usually 1.')}</label>
+          <select onchange="state.${scn}.advTarget=this.value; render()">
+            ${[0,1,2,3].map(v=>`<option value="${v}" ${Number(s.advTarget)===v?'selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>FP sold so far</label>
+          <input type="number" placeholder="e.g. 5" value="${s.fpSold}" onchange="state.${scn}.fpSold=this.value; render()">
+        </div>
+        <div class="field"><label>Adv+ sold so far</label>
+          <input type="number" placeholder="e.g. 1" value="${s.advSold}" onchange="state.${scn}.advSold=this.value; render()">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Typical Adv+ price ${tip(scn+'-advb','Optional \u2014 only matters if you sold more Adv+ than your target.')}</label>
+          <select onchange="state.${scn}.advBracket=this.value; render()">
+            <option value="" ${!s.advBracket?'selected':''}>Not sure (wider range)</option>
+            ${ADV_BRACKET_DROPDOWN_KEYS.map(k=>`<option value="${k}" ${s.advBracket===k?'selected':''}>${ADV_BRACKET_LABELS[k]}</option>`).join('')}
+          </select>
+        </div>
+        <div></div>
+      </div>
+
+      <div class="field-note">FP RFDs are assumed split evenly between \u20b91,75,000\u20131,90,000 (50% payout) and \u20b91,95,000\u20132,10,000 (100% payout) \u2014 your typical range.</div>
+
+      <div class="summary-grid">
+        <div class="stat"><div class="k">Achievement</div><div class="v">${achPct}</div></div>
+      </div>
+
+      <div class="total-box"><div class="k">ESTIMATED INCENTIVE</div><div class="v">${money(rr.min)} \u2013 ${money(rr.max)}</div></div>
+      <button class="add-btn" style="width:100%;margin-top:10px;text-align:center;" onclick="setMode('${scn}','exact')">Check Exact Incentive \u2192</button>
+    `;
+    document.getElementById('body'+scn).innerHTML = html;
+    return (rr.min+rr.max)/2;
+  }
+
+  const r = computeScenario(s);
+  const achPct = (r.achievement*100).toFixed(1)+'%';
+
+  const html = `
+    <button class="link-btn" style="margin-bottom:10px;" onclick="setMode('${scn}','range')">\u2190 Back to quick estimate</button>
+    <div class="field-row">
+      <div class="field"><label>Monthly FP Target ${tip(scn+'-fpt2','How many DS/Full Programme sales you are expected to close this month.')}</label>
+        <select onchange="state.${scn}.fpTarget=this.value; render()">
+          ${[2,3,4,5,6,7,8,9,10].map(v=>`<option value="${v}" ${Number(s.fpTarget)===v?'selected':''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Monthly Adv+ Target ${tip(scn+'-advt2','Usually 1 \u2014 how many Advantage+ sales count toward your target.')}</label>
+        <select onchange="state.${scn}.advTarget=this.value; render()">
+          ${[0,1,2,3].map(v=>`<option value="${v}" ${Number(s.advTarget)===v?'selected':''}>${v}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>\u20b91.6L\u20131.7L quota ${tip(scn+'-quota','Only this many sales priced \u20b91,60,000\u2013\u20b91,70,000 pay 100% each month \u2014 this varies by person, ask your manager if unsure.')}</label>
+        <select onchange="state.${scn}.quotaAllowance=this.value; render()">
+          ${[0,1,2,3,4,5].map(v=>`<option value="${v}" ${Number(s.quotaAllowance)===v?'selected':''}>${v} / month</option>`).join('')}
+        </select>
+      </div>
+      <div></div>
+    </div>
+
+    <div class="section-title">FP RFDs ${tip(scn+'-fprfd','For each Full Programme sale: pick which cycle it happened in, and enter the price it sold at.')}</div>
+    <table class="rfd-table">
+      <tr><th class="col-cycle">Cycle</th><th class="col-price">Price (\u20b9)</th><th class="col-recovered">Recovered (\u20b9) ${tip(scn+'-fprec','How much the learner has actually PAID you so far for this sale \u2014 not what is left to collect. Leave this box empty only if they have paid the FULL price already.')}</th><th></th></tr>
+      ${s.fp.map((row,idx)=>fpRow(scn,idx,row)).join('')}
+    </table>
+    <div class="field-note">Leave "Recovered" empty = fully paid. Only fill it in if the learner still owes some amount.</div>
+    <button class="add-btn" onclick="addRow('${scn}','fp')">+ Add FP RFD</button>
+
+    <div class="section-title" style="margin-top:16px;">Advantage+ RFDs ${tip(scn+'-advrfd','Date is required here \u2014 it decides which cycle the Adv+ counts toward and which one is your \"required\" sale.')}</div>
+    <table class="rfd-table">
+      <tr><th class="col-date">Date</th><th class="col-price">Price (\u20b9)</th><th class="col-recovered">Recovered (\u20b9) ${tip(scn+'-advrec','How much the learner has actually PAID you so far for this Adv+ sale \u2014 not what is left to collect. Leave this box empty only if they have paid the FULL price already.')}</th><th></th></tr>
+      ${s.adv.map((row,idx)=>advRow(scn,idx,row)).join('')}
+    </table>
+    <div class="field-note">Leave "Recovered" empty = fully paid. Only fill it in if the learner still owes some amount.</div>
+    <button class="add-btn" onclick="addRow('${scn}','adv')">+ Add Adv+ RFD</button>
+
+    <div class="section-title" style="margin-top:16px;">Bonuses ${tip(scn+'-bonus','Any spot offer or competition bonus you were told about \u2014 add it here as a flat amount.')}</div>
+    <table class="rfd-table">${s.bonuses.map((row,idx)=>bonusRow(scn,idx,row)).join('')}</table>
+    <button class="add-btn" onclick="addRow('${scn}','bonus')">+ Add Bonus</button>
+
+    <div class="summary-grid">
+      <div class="stat"><div class="k">Achievement</div><div class="v">${achPct}</div></div>
+      <div class="stat"><div class="k">C1 / C2 Slab</div><div class="v">${r.c1Slab} / ${r.c2Slab}</div></div>
+    </div>
+
+    <details class="breakdown">
+      <summary>See per-RFD breakdown</summary>
+      <table>
+        <tr><th>Type</th><th>Cycle</th><th>Price</th><th>Slab \u2192 Rate Used</th><th>Payout</th></tr>
+        ${r.fpDetail.map(d=>{
+          const slab = d.cycle==='C1' ? r.c1Slab : r.c2Slab;
+          const pct = (d.mult*100).toFixed(0)+'%';
+          const quotaNote = (d.price>=160000 && d.price<=170000) ? (d.mult>0?' (quota used)':' (quota used up)') : '';
+          return `<tr><td>FP${d.held?' <span class="tag">on hold</span>':''}</td><td>${d.cycle}</td><td>${money(d.price)}</td><td>Slab ${slab} \u2192 ${pct}${quotaNote}</td><td>${money(d.payout)}</td></tr>`;
+        }).join('')}
+        ${r.advDetail.map(d=>{
+          const rateNote = d.required ? 'Required sale \u2014 no flat bonus' : (d.computedPayout>0 ? `Flat tier: ${money(d.computedPayout)}` : 'Below \u20b975,000 \u2014 no bonus');
+          return `<tr><td>Adv+${d.held?' <span class="tag">on hold</span>':''}</td><td>${d.cycle}</td><td>${money(d.price)}</td><td>${rateNote}</td><td>${money(d.payout)}</td></tr>`;
+        }).join('')}
+      </table>
+      <table style="margin-top:10px;">
+        <tr><th colspan="2">How the total was built</th></tr>
+        <tr><td>FP RFDs subtotal</td><td>${money(r.sumFP)}</td></tr>
+        <tr><td>Adv+ RFDs subtotal</td><td>${money(r.sumAdv)}</td></tr>
+        <tr><td>+ Achievement Bonus${r.achBonus===0?' (not hit \u2014 needs 100%+)':''}</td><td>${money(r.achBonus)}</td></tr>
+        <tr><td>+ Cycle Bonus${r.cycleBonus===0?' (needs \u22652 sales in both cycles)':''}</td><td>${money(r.cycleBonus)}</td></tr>
+        <tr><td>\u00d7 0-Adv+ Penalty${r.zeroAdvMult<1?' (0 Adv+ sold)':' (not applied)'}</td><td>${r.zeroAdvMult<1?'\u22125%':'\u2014'}</td></tr>
+        <tr><td>\u00d7 0-Cycle Penalty${r.zeroCycleMult<1?' (a cycle had 0 sales)':' (not applied)'}</td><td>${r.zeroCycleMult<1?'\u221225%':'\u2014'}</td></tr>
+        <tr><td>= Core Total</td><td>${money(r.coreTotal)}</td></tr>
+        <tr><td>+ Competition / Spot Bonuses</td><td>${money(r.bonusSum)}</td></tr>
+        <tr style="font-weight:700;"><td>= TOTAL</td><td>${money(r.total)}</td></tr>
+      </table>
+    </details>
+
+    <div class="total-box"><div class="k">TOTAL INCENTIVE</div><div class="v">${money(r.total)}</div></div>
+  `;
+  document.getElementById('body'+scn).innerHTML = html;
+  return r.total;
+}
+
+function render(){
+  const totalA = renderScenario('A');
+  const totalB = renderScenario('B');
+  const labelA = state.A.mode==='range' ? ' (est.)' : '';
+  const labelB = state.B.mode==='range' ? ' (est.)' : '';
+  document.getElementById('totalA').textContent = money(totalA)+labelA;
+  document.getElementById('totalB').textContent = money(totalB)+labelB;
+  const diff = totalB - totalA;
+  const diffEl = document.getElementById('diffVal');
+  diffEl.textContent = money(diff);
+  diffEl.className = 'amt ' + (diff>0?'pos':diff<0?'neg':'');
+  document.getElementById('diffBox').className = 'box ' + (diff>0?'diff-pos':diff<0?'diff-neg':'');
+}
+render();
+</script>
+</body>
+</html>
